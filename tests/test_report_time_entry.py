@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING, Union
 import pytest
 from httpx import Response
 from pydantic import ValidationError
-from toggl_python.schemas.report_time_entry import SearchReportTimeEntriesResponse
+from toggl_python.schemas.report_time_entry import (
+    SearchReportTimeEntriesRequest,
+    SearchReportTimeEntriesResponse,
+)
 
 from tests.conftest import fake
 from tests.responses.report_time_entry_post import SEARCH_REPORT_TIME_ENTRY_RESPONSE
@@ -67,6 +70,16 @@ def test_search_report_time_entries__with_start_and_end_date(
 
     assert mocked_route.called is True
     assert result == expected_result
+
+
+def test_search_report_time_entries_request__serialize_none_dates() -> None:
+    """`serialize_datetimes` must return None as is instead of calling `.isoformat()` on it."""
+    request = SearchReportTimeEntriesRequest(project_ids=[fake.random_int()])
+
+    result = request.model_dump(mode="json")
+
+    assert result["start_date"] is None
+    assert result["end_date"] is None
 
 
 def test_search_report_time_entries__with_all_params(

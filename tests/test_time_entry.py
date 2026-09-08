@@ -11,9 +11,12 @@ from toggl_python.exceptions import BadRequest
 from toggl_python.schemas.base import BulkEditOperation, BulkEditOperations, BulkEditResponse
 from toggl_python.schemas.time_entry import (
     BulkEditTimeEntriesFieldNames,
+    MeTimeEntryQueryParams,
     MeTimeEntryResponse,
     MeTimeEntryWithMetaResponse,
     MeWebTimerResponse,
+    TimeEntryCreateRequest,
+    TimeEntryRequest,
 )
 
 from tests.conftest import fake
@@ -513,6 +516,52 @@ def test_stop_time_entry__ok(response_mock: MockRouter, authed_workspace: Worksp
 
     assert mocked_route.called is True
     assert result == expected_result
+
+
+def test_time_entry_request__serialize_none_start_and_stop() -> None:
+    """`serialize_datetimes` must return None as is instead of calling `.isoformat()` on it."""
+    request = TimeEntryRequest(
+        billable=None,
+        description=None,
+        project_id=None,
+        tag_ids=None,
+        task_id=None,
+        user_id=None,
+        duration=None,
+        start=None,
+        stop=None,
+        shared_with_user_ids=None,
+        tags=None,
+    )
+
+    result = request.model_dump(mode="json")
+
+    assert result["start"] is None
+    assert result["stop"] is None
+
+
+def test_time_entry_create_request__serialize_none_stop() -> None:
+    """`serialize_datetimes` must return None as is instead of calling `.isoformat()` on it."""
+    request = TimeEntryCreateRequest(
+        created_with=fake.color_name(),
+        start=datetime_repr_factory(),
+        workspace_id=fake.random_int(),
+    )
+
+    result = request.model_dump(mode="json")
+
+    assert result["stop"] is None
+
+
+def test_me_time_entry_query_params__serialize_none_dates() -> None:
+    """`serialize_datetimes` must return None as is instead of calling `.isoformat()` on it."""
+    query_params = MeTimeEntryQueryParams(meta=False, since=None)
+
+    result = query_params.model_dump(mode="json")
+
+    assert result["before"] is None
+    assert result["start_date"] is None
+    assert result["end_date"] is None
 
 
 def test_stop_time_entry__already_stopped(

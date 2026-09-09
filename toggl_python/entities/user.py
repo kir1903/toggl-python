@@ -39,23 +39,18 @@ class CurrentUser(ApiWrapper):
     prefix: str = "/me"
 
     def logged(self) -> bool:
-        response = self.client.get(url=f"{self.prefix}/logged")
-        self.raise_for_status(response)
-
         # Returns 200 OK and empty response body
-        return response.is_success
+        return self._request_and_check_success("GET", f"{self.prefix}/logged")
 
     def me(self, with_related_data: bool = False) -> MeResponse:
         response_schema = MeResponseWithRelatedData if with_related_data else MeResponse
-        response = self.client.get(
-            url=self.prefix,
+
+        return self._request_and_validate(
+            "GET",
+            self.prefix,
+            response_schema,
             params={"with_related_data": with_related_data},
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return response_schema.model_validate(response_body)
 
     def update_me(
         self,
@@ -80,11 +75,7 @@ class CurrentUser(ApiWrapper):
         )
         payload = payload_schema.model_dump(mode="json", exclude_none=True, exclude_unset=True)
 
-        response = self.client.put(url=self.prefix, json=payload)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return UpdateMeResponse.model_validate(response_body)
+        return self._request_and_validate("PUT", self.prefix, UpdateMeResponse, json=payload)
 
     def change_password(self, current_password: str, new_password: str) -> bool:
         """Validate and change user password.
@@ -97,27 +88,17 @@ class CurrentUser(ApiWrapper):
         )
         payload = payload_schema.model_dump_json()
 
-        response = self.client.put(url=self.prefix, content=payload)
-        self.raise_for_status(response)
-
-        return response.is_success
+        return self._request_and_check_success("PUT", self.prefix, content=payload)
 
     def features(self) -> List[MeFeaturesResponse]:
-        response = self.client.get(url=f"{self.prefix}/features")
-        self.raise_for_status(response)
-        response_body = response.json()
-
-        return [
-            MeFeaturesResponse.model_validate(workspace_features)
-            for workspace_features in response_body
-        ]
+        return self._request_and_validate_list(
+            "GET", f"{self.prefix}/features", MeFeaturesResponse
+        )
 
     def preferences(self) -> MePreferencesResponse:
-        response = self.client.get(url=f"{self.prefix}/preferences")
-        self.raise_for_status(response)
-        response_body = response.json()
-
-        return MePreferencesResponse.model_validate(response_body)
+        return self._request_and_validate(
+            "GET", f"{self.prefix}/preferences", MePreferencesResponse
+        )
 
     def update_preferences(
         self,
@@ -136,10 +117,9 @@ class CurrentUser(ApiWrapper):
         )
         payload = payload_schema.model_dump_json(exclude_none=True, exclude_unset=True)
 
-        response = self.client.post(url=f"{self.prefix}/preferences", content=payload)
-        self.raise_for_status(response)
-
-        return response.is_success
+        return self._request_and_check_success(
+            "POST", f"{self.prefix}/preferences", content=payload
+        )
 
     def get_time_entry(
         self, time_entry_id: int, meta: bool = False
@@ -149,23 +129,20 @@ class CurrentUser(ApiWrapper):
         Tested responses do not differ from requests with `include_sharing=false`
         that is why there is no `include_sharing` method argument.
         """
-        response = self.client.get(
-            url=f"{self.prefix}/time_entries/{time_entry_id}",
-            params={"meta": meta},
-        )
-        self.raise_for_status(response)
-
         response_schema = MeTimeEntryWithMetaResponse if meta else MeTimeEntryResponse
 
-        response_body = response.json()
-        return response_schema.model_validate(response_body)
+        return self._request_and_validate(
+            "GET",
+            f"{self.prefix}/time_entries/{time_entry_id}",
+            response_schema,
+            params={"meta": meta},
+        )
 
     def get_current_time_entry(self) -> Optional[MeTimeEntryResponse]:
         """Return empty response if there is no running TimeEntry."""
-        response = self.client.get(url=f"{self.prefix}/time_entries/current")
-        self.raise_for_status(response)
-
+        response = self._request("GET", f"{self.prefix}/time_entries/current")
         response_body = response.json()
+
         return MeTimeEntryResponse.model_validate(response_body) if response_body else None
 
     def get_time_entries(
@@ -190,20 +167,14 @@ class CurrentUser(ApiWrapper):
         )
         payload = payload_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.get(url=f"{self.prefix}/time_entries", params=payload)
-        self.raise_for_status(response)
-
         response_schema = MeTimeEntryWithMetaResponse if meta else MeTimeEntryResponse
 
-        response_body = response.json()
-        return [response_schema.model_validate(time_entry) for time_entry in response_body]
+        return self._request_and_validate_list(
+            "GET", f"{self.prefix}/time_entries", response_schema, params=payload
+        )
 
     def get_web_timer(self) -> MeWebTimerResponse:
-        response = self.client.get(url=f"{self.prefix}/web-timer")
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return MeWebTimerResponse.model_validate(response_body)
+        return self._request_and_validate("GET", f"{self.prefix}/web-timer", MeWebTimerResponse)
 
     def get_projects(
         self,
@@ -213,11 +184,9 @@ class CurrentUser(ApiWrapper):
         payload_schema = MeProjectsQueryParams(include_archived=include_archived, since=since)
         payload = payload_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.get(url=f"{self.prefix}/projects", params=payload)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return [ProjectResponse.model_validate(project) for project in response_body]
+        return self._request_and_validate_list(
+            "GET", f"{self.prefix}/projects", ProjectResponse, params=payload
+        )
 
     def get_paginated_projects(
         self,
@@ -230,8 +199,6 @@ class CurrentUser(ApiWrapper):
         )
         query_params = query_params_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.get(url=f"{self.prefix}/projects/paginated", params=query_params)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return [ProjectResponse.model_validate(project) for project in response_body]
+        return self._request_and_validate_list(
+            "GET", f"{self.prefix}/projects/paginated", ProjectResponse, params=query_params
+        )

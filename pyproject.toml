@@ -86,10 +86,13 @@ ignore = [
 "tests/*" = [
     "S101",
     "S106", # Possible hardcoded password assigned to argument
+    "SLF001", # Private member accessed - needed to unit test ApiWrapper's protected helpers
 ]
 # Move standard/third-party library import into a type-checking block
 # Necessary for valid Pydantic schemas
 "toggl_python/schemas/*" = ["TCH002", "TCH003"]
+# httpx.Client.request() itself types `json` and other passthrough kwargs as `Any`
+"toggl_python/api.py" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 lines-after-imports = 2

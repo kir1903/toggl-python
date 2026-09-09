@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from toggl_python.api import ApiWrapper
+from toggl_python.schemas.base import dump_payload
 from toggl_python.schemas.current_user import (
     DateFormat,
     DurationFormat,
@@ -73,7 +74,7 @@ class CurrentUser(ApiWrapper):
             fullname=fullname,
             timezone=timezone,
         )
-        payload = payload_schema.model_dump(mode="json", exclude_none=True, exclude_unset=True)
+        payload = dump_payload(payload_schema, exclude_unset=True)
 
         return self._request_and_validate("PUT", self.prefix, UpdateMeResponse, json=payload)
 
@@ -165,7 +166,7 @@ class CurrentUser(ApiWrapper):
             start_date=start_date,
             end_date=end_date,
         )
-        payload = payload_schema.model_dump(mode="json", exclude_none=True)
+        payload = dump_payload(payload_schema)
 
         response_schema = MeTimeEntryWithMetaResponse if meta else MeTimeEntryResponse
 
@@ -182,7 +183,7 @@ class CurrentUser(ApiWrapper):
         since: Union[int, datetime, None] = None,
     ) -> List[ProjectResponse]:
         payload_schema = MeProjectsQueryParams(include_archived=include_archived, since=since)
-        payload = payload_schema.model_dump(mode="json", exclude_none=True)
+        payload = dump_payload(payload_schema)
 
         return self._request_and_validate_list(
             "GET", f"{self.prefix}/projects", ProjectResponse, params=payload
@@ -197,7 +198,7 @@ class CurrentUser(ApiWrapper):
         query_params_schema = MePaginatedProjectsQueryParams(
             since=since, start_project_id=start_project_id, per_page=per_page
         )
-        query_params = query_params_schema.model_dump(mode="json", exclude_none=True)
+        query_params = dump_payload(query_params_schema)
 
         return self._request_and_validate_list(
             "GET", f"{self.prefix}/projects/paginated", ProjectResponse, params=query_params

@@ -18,6 +18,16 @@ class BaseSchema(BaseModel):
     pass
 
 
+def dump_payload(schema: BaseSchema, *, exclude_unset: bool = False) -> Dict[str, object]:
+    """Serialize a query params / request body schema the way entity methods need it.
+
+    `None` fields are always dropped since the API treats an omitted field
+    differently from an explicit `null`. `exclude_unset` additionally drops
+    fields that were not passed at all, which matters for partial PUT/PATCH bodies.
+    """
+    return schema.model_dump(mode="json", exclude_none=True, exclude_unset=exclude_unset)
+
+
 class SinceParamSchemaMixin(BaseSchema):
     since: Optional[AwareDatetime]
 

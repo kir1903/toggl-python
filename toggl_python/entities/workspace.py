@@ -7,6 +7,7 @@ from toggl_python.schemas.base import (
     BulkEditMethodParams,
     BulkEditOperation,
     BulkEditResponse,
+    dump_payload,
 )
 from toggl_python.schemas.project import CreateProjectRequest, ProjectQueryParams, ProjectResponse
 from toggl_python.schemas.time_entry import (
@@ -35,7 +36,7 @@ class Workspace(ApiWrapper):
 
     def list(self, since: Union[int, datetime, None] = None) -> List[WorkspaceResponse]:
         payload_schema = GetWorkspacesQueryParams(since=since)
-        params = payload_schema.model_dump(mode="json", exclude_none=True)
+        params = dump_payload(payload_schema)
 
         return self._request_and_validate_list(
             "GET", self.prefix, WorkspaceResponse, params=params
@@ -64,9 +65,7 @@ class Workspace(ApiWrapper):
             reports_collapse=reports_collapse,
             name=name,
         )
-        request_body = request_body_schema.model_dump(
-            mode="json", exclude_none=True, exclude_unset=True
-        )
+        request_body = dump_payload(request_body_schema, exclude_unset=True)
 
         return self._request_and_validate(
             "PUT", f"{self.prefix}/{workspace_id}", WorkspaceResponse, json=request_body
@@ -108,9 +107,7 @@ class Workspace(ApiWrapper):
             name=name,
             start_date=start_date,
         )
-        request_body = request_body_schema.model_dump(
-            mode="json", exclude_none=True, exclude_unset=True
-        )
+        request_body = dump_payload(request_body_schema, exclude_unset=True)
 
         return self._request_and_validate(
             "POST", f"{self.prefix}/{workspace_id}/projects", ProjectResponse, json=request_body
@@ -155,7 +152,7 @@ class Workspace(ApiWrapper):
             only_templates=only_templates,
             only_me=only_me,
         )
-        payload = payload_schema.model_dump(mode="json", exclude_none=True)
+        payload = dump_payload(payload_schema)
 
         return self._request_and_validate_list(
             "GET", f"{self.prefix}/{workspace_id}/projects", ProjectResponse, params=payload
@@ -202,9 +199,7 @@ class Workspace(ApiWrapper):
             template=template,
             template_id=template_id,
         )
-        request_body = request_body_schema.model_dump(
-            mode="json", exclude_none=True, exclude_unset=True
-        )
+        request_body = dump_payload(request_body_schema, exclude_unset=True)
 
         return self._request_and_validate(
             "PUT",
@@ -228,9 +223,7 @@ class Workspace(ApiWrapper):
         validated_args_schema = BulkEditMethodParams(ids=project_ids, operations=operations)
         validated_args = validated_args_schema.model_dump(mode="json")
         ids = validated_args["ids"]
-        request_body = [
-            operation.model_dump(mode="json", exclude_none=True) for operation in operations
-        ]
+        request_body = [dump_payload(operation) for operation in operations]
 
         return self._request_and_validate(
             "PATCH",
@@ -273,9 +266,7 @@ class Workspace(ApiWrapper):
             task_id=task_id,
             user_id=user_id,
         )
-        request_body = request_body_schema.model_dump(
-            mode="json", exclude_none=True, exclude_unset=True
-        )
+        request_body = dump_payload(request_body_schema, exclude_unset=True)
 
         return self._request_and_validate(
             "POST",
@@ -314,7 +305,7 @@ class Workspace(ApiWrapper):
             task_id=task_id,
             user_id=user_id,
         )
-        request_body = request_body_schema.model_dump(mode="json", exclude_none=True)
+        request_body = dump_payload(request_body_schema)
 
         return self._request_and_validate(
             "PUT",
@@ -338,9 +329,7 @@ class Workspace(ApiWrapper):
         validated_args = validated_args_schema.model_dump(mode="json")
         ids = validated_args["ids"]
 
-        request_body = [
-            operation.model_dump(mode="json", exclude_none=True) for operation in operations
-        ]
+        request_body = [dump_payload(operation) for operation in operations]
 
         return self._request_and_validate(
             "PATCH",

@@ -29,25 +29,17 @@ class Workspace(ApiWrapper):
     prefix: str = "/workspaces"
 
     def get(self, workspace_id: int) -> WorkspaceResponse:
-        response = self.client.get(url=f"{self.prefix}/{workspace_id}")
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return WorkspaceResponse.model_validate(response_body)
+        return self._request_and_validate(
+            "GET", f"{self.prefix}/{workspace_id}", WorkspaceResponse
+        )
 
     def list(self, since: Union[int, datetime, None] = None) -> List[WorkspaceResponse]:
         payload_schema = GetWorkspacesQueryParams(since=since)
         params = payload_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.get(url=self.prefix, params=params)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return [
-            WorkspaceResponse.model_validate(workspace_data) for workspace_data in response_body
-        ]
+        return self._request_and_validate_list(
+            "GET", self.prefix, WorkspaceResponse, params=params
+        )
 
     def update(
         self,
@@ -76,11 +68,9 @@ class Workspace(ApiWrapper):
             mode="json", exclude_none=True, exclude_unset=True
         )
 
-        response = self.client.put(url=f"{self.prefix}/{workspace_id}", json=request_body)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return WorkspaceResponse.model_validate(response_body)
+        return self._request_and_validate(
+            "PUT", f"{self.prefix}/{workspace_id}", WorkspaceResponse, json=request_body
+        )
 
     def create_project(
         self,
@@ -122,21 +112,14 @@ class Workspace(ApiWrapper):
             mode="json", exclude_none=True, exclude_unset=True
         )
 
-        response = self.client.post(
-            url=f"{self.prefix}/{workspace_id}/projects", json=request_body
+        return self._request_and_validate(
+            "POST", f"{self.prefix}/{workspace_id}/projects", ProjectResponse, json=request_body
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return ProjectResponse.model_validate(response_body)
 
     def get_project(self, workspace_id: int, project_id: int) -> ProjectResponse:
-        response = self.client.get(url=f"{self.prefix}/{workspace_id}/projects/{project_id}")
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return ProjectResponse.model_validate(response_body)
+        return self._request_and_validate(
+            "GET", f"{self.prefix}/{workspace_id}/projects/{project_id}", ProjectResponse
+        )
 
     def get_projects(  # noqa: PLR0913 - Too many arguments in function definition (15 > 12)
         self,
@@ -174,12 +157,9 @@ class Workspace(ApiWrapper):
         )
         payload = payload_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.get(url=f"{self.prefix}/{workspace_id}/projects", params=payload)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return [ProjectResponse.model_validate(project_data) for project_data in response_body]
+        return self._request_and_validate_list(
+            "GET", f"{self.prefix}/{workspace_id}/projects", ProjectResponse, params=payload
+        )
 
     def update_project(  # noqa: PLR0913 - Too many arguments in function definition
         self,
@@ -226,13 +206,12 @@ class Workspace(ApiWrapper):
             mode="json", exclude_none=True, exclude_unset=True
         )
 
-        response = self.client.put(
-            url=f"{self.prefix}/{workspace_id}/projects/{project_id}", json=request_body
+        return self._request_and_validate(
+            "PUT",
+            f"{self.prefix}/{workspace_id}/projects/{project_id}",
+            ProjectResponse,
+            json=request_body,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return ProjectResponse.model_validate(response_body)
 
     def bulk_edit_projects(
         self,
@@ -253,20 +232,17 @@ class Workspace(ApiWrapper):
             operation.model_dump(mode="json", exclude_none=True) for operation in operations
         ]
 
-        response = self.client.patch(
-            url=f"{self.prefix}/{workspace_id}/projects/{ids}", json=request_body
+        return self._request_and_validate(
+            "PATCH",
+            f"{self.prefix}/{workspace_id}/projects/{ids}",
+            BulkEditResponse,
+            json=request_body,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return BulkEditResponse.model_validate(response_body)
 
     def delete_project(self, workspace_id: int, project_id: int) -> bool:
-        response = self.client.delete(url=f"{self.prefix}/{workspace_id}/projects/{project_id}")
-        self.raise_for_status(response)
-
-        return response.is_success
+        return self._request_and_check_success(
+            "DELETE", f"{self.prefix}/{workspace_id}/projects/{project_id}"
+        )
 
     def create_time_entry(
         self,
@@ -301,14 +277,12 @@ class Workspace(ApiWrapper):
             mode="json", exclude_none=True, exclude_unset=True
         )
 
-        response = self.client.post(
-            url=f"{self.prefix}/{workspace_id}/time_entries", json=request_body
+        return self._request_and_validate(
+            "POST",
+            f"{self.prefix}/{workspace_id}/time_entries",
+            MeTimeEntryResponse,
+            json=request_body,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return MeTimeEntryResponse.model_validate(response_body)
 
     def update_time_entry(  # noqa: PLR0913 - Too many arguments in function definition (13 > 12)
         self,
@@ -342,22 +316,17 @@ class Workspace(ApiWrapper):
         )
         request_body = request_body_schema.model_dump(mode="json", exclude_none=True)
 
-        response = self.client.put(
-            url=f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}", json=request_body
+        return self._request_and_validate(
+            "PUT",
+            f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}",
+            MeTimeEntryResponse,
+            json=request_body,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return MeTimeEntryResponse.model_validate(response_body)
 
     def delete_time_entry(self, workspace_id: int, time_entry_id: int) -> bool:
-        response = self.client.delete(
-            url=f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}"
+        return self._request_and_check_success(
+            "DELETE", f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}"
         )
-        self.raise_for_status(response)
-
-        return response.is_success
 
     def bulk_edit_time_entries(
         self,
@@ -373,21 +342,16 @@ class Workspace(ApiWrapper):
             operation.model_dump(mode="json", exclude_none=True) for operation in operations
         ]
 
-        response = self.client.patch(
-            url=f"{self.prefix}/{workspace_id}/time_entries/{ids}", json=request_body
+        return self._request_and_validate(
+            "PATCH",
+            f"{self.prefix}/{workspace_id}/time_entries/{ids}",
+            BulkEditResponse,
+            json=request_body,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return BulkEditResponse.model_validate(response_body)
 
     def stop_time_entry(self, workspace_id: int, time_entry_id: int) -> MeTimeEntryResponse:
-        response = self.client.patch(
-            url=f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}/stop"
+        return self._request_and_validate(
+            "PATCH",
+            f"{self.prefix}/{workspace_id}/time_entries/{time_entry_id}/stop",
+            MeTimeEntryResponse,
         )
-        self.raise_for_status(response)
-
-        response_body = response.json()
-
-        return MeTimeEntryResponse.model_validate(response_body)

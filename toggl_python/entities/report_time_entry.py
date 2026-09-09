@@ -51,11 +51,9 @@ class ReportTimeEntry(ApiWrapper):
         )
         payload = payload_schema.model_dump(mode="json", exclude_none=True, exclude_unset=True)
 
-        response = self.client.post(url=f"/{workspace_id}/search/time_entries", json=payload)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return [
-            SearchReportTimeEntriesResponse.model_validate(report_time_entry_data)
-            for report_time_entry_data in response_body
-        ]
+        return self._request_and_validate_list(
+            "POST",
+            f"/{workspace_id}/search/time_entries",
+            SearchReportTimeEntriesResponse,
+            json=payload,
+        )

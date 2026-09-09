@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from toggl_python.api import ApiWrapper
+from toggl_python.schemas.base import dump_payload
 from toggl_python.schemas.report_time_entry import (
     SearchReportTimeEntriesRequest,
     SearchReportTimeEntriesResponse,
@@ -49,13 +50,11 @@ class ReportTimeEntry(ApiWrapper):
             page_size=page_size,
             first_row_number=first_row_number,
         )
-        payload = payload_schema.model_dump(mode="json", exclude_none=True, exclude_unset=True)
+        payload = dump_payload(payload_schema, exclude_unset=True)
 
-        response = self.client.post(url=f"/{workspace_id}/search/time_entries", json=payload)
-        self.raise_for_status(response)
-
-        response_body = response.json()
-        return [
-            SearchReportTimeEntriesResponse.model_validate(report_time_entry_data)
-            for report_time_entry_data in response_body
-        ]
+        return self._request_and_validate_list(
+            "POST",
+            f"/{workspace_id}/search/time_entries",
+            SearchReportTimeEntriesResponse,
+            json=payload,
+        )
